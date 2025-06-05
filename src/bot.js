@@ -2,6 +2,15 @@ const { Client, GatewayIntentBits, SlashCommandBuilder, EmbedBuilder } = require
 const cron = require('node-cron');
 const Database = require('./database');
 
+// Set timezone to Eastern Time for the entire Node.js process
+process.env.TZ = 'America/New_York';
+
+// Log current timezone information for debugging
+console.log('🕐 Timezone Configuration:');
+console.log(`   System TZ: ${process.env.TZ}`);
+console.log(`   Current time: ${new Date().toString()}`);
+console.log(`   Current time (Eastern): ${new Date().toLocaleString("en-US", {timeZone: "America/New_York"})}`);
+
 // Note: Environment variables should be passed directly to the process
 // For local development, you can set them in your shell or IDE
 
@@ -215,6 +224,11 @@ async function checkBirthdays() {
     const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
     const month = easternTime.getMonth() + 1;
     const day = easternTime.getDate();
+    
+    // Debug timezone information
+    console.log(`🕐 Time Debug - System: ${now.toString()}`);
+    console.log(`🕐 Time Debug - Eastern: ${easternTime.toString()}`);
+    console.log(`📅 Checking for birthdays on: ${month}/${day}`);
 
     try {
         const todaysBirthdays = await database.getTodaysBirthdays(month, day);

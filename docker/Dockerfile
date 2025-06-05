@@ -21,8 +21,8 @@ RUN if [ -f package-lock.json ]; then npm ci --only=production; else npm install
 # Production stage
 FROM node:18-alpine AS production
 
-# Install runtime dependencies
-RUN apk add --no-cache sqlite
+# Install runtime dependencies and timezone data
+RUN apk add --no-cache sqlite tzdata
 
 # Set working directory
 WORKDIR /app
