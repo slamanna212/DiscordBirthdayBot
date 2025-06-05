@@ -54,6 +54,13 @@ jobs:
           type=semver,pattern={{major}}.{{minor}}
           type=raw,value=latest,enable={{is_default_branch}}
 
+    - name: Debug build context
+      run: |
+        echo "📋 Build context contents:"
+        ls -la
+        echo "📦 Package.json contents:"
+        cat package.json
+
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:

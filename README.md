@@ -232,6 +232,12 @@ Docker deployment uses environment variables passed directly via `-e` flags:
 - Check disk space availability
 - Restart the bot if database connection issues occur
 
+### Docker build errors
+- If you get `npm ci` errors, make sure you have a `package-lock.json` file
+- For SQLite3 compilation errors, the Dockerfile includes build dependencies
+- Test locally with: `npm run docker:test`
+- Check the debug build: `docker build -f docker/Dockerfile.test -t debug .`
+
 ## Support
 
 If you encounter any issues, check the console output for error messages. Most problems are related to configuration or Discord permissions.

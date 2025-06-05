@@ -1,0 +1,27 @@
+# Simple test Dockerfile to debug build issues
+FROM node:18-alpine
+
+# Install build dependencies
+RUN apk add --no-cache python3 make g++ sqlite sqlite-dev
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Debug: Show what we have
+RUN echo "📋 Files in /app:" && ls -la
+RUN echo "📦 Package.json content:" && cat package.json
+
+# Try to install dependencies with verbose output
+RUN npm install --only=production --verbose
+
+# Copy application files
+COPY src/ ./src/
+COPY scripts/ ./scripts/
+
+# Test that everything is working
+RUN node -e "console.log('✅ Node.js is working')"
+RUN node -e "require('./src/database'); console.log('✅ Database module loads')" || echo "❌ Database module failed to load"
+
+CMD ["node", "src/bot.js"] 

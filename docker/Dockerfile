@@ -1,5 +1,13 @@
-# Use Node.js 18 LTS as base image
-FROM node:18-alpine
+# Build stage
+FROM node:18-alpine AS builder
+
+# Install build dependencies for native modules (like sqlite3)
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    sqlite \
+    sqlite-dev
 
 # Set working directory
 WORKDIR /app
@@ -7,8 +15,23 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies with fallback
+RUN if [ -f package-lock.json ]; then npm ci --only=production; else npm install --only=production; fi && npm cache clean --force
+
+# Production stage
+FROM node:18-alpine AS production
+
+# Install runtime dependencies
+RUN apk add --no-cache sqlite
+
+# Set working directory
+WORKDIR /app
+
+# Copy node_modules from builder stage
+COPY --from=builder /app/node_modules ./node_modules
+
+# Copy package.json for reference
+COPY package*.json ./
 
 # Copy application files
 COPY src/ ./src/
