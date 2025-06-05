@@ -1,0 +1,272 @@
+const { Client, GatewayIntentBits, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const cron = require('node-cron');
+const Database = require('./database');
+
+// Note: Environment variables should be passed directly to the process
+// For local development, you can set them in your shell or IDE
+
+// Load configuration from environment variables
+const config = {
+    token: process.env.DISCORD_TOKEN,
+    clientId: process.env.DISCORD_CLIENT_ID,
+    birthdayChannelId: process.env.BIRTHDAY_CHANNEL_ID
+};
+
+// Validate required environment variables
+if (!config.token || !config.clientId || !config.birthdayChannelId) {
+    console.error('❌ Missing required environment variables:');
+    if (!config.token) console.error('  - DISCORD_TOKEN');
+    if (!config.clientId) console.error('  - DISCORD_CLIENT_ID');
+    if (!config.birthdayChannelId) console.error('  - BIRTHDAY_CHANNEL_ID');
+    process.exit(1);
+}
+
+// Initialize database
+const database = new Database();
+
+// Create Discord client
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages
+    ]
+});
+
+// Bot ready event
+client.once('ready', () => {
+    console.log(`✅ ${client.user.tag} is online and ready!`);
+    console.log(`📅 Birthday checking scheduled for 10:00 AM Eastern Time`);
+    
+    // Schedule birthday check for 10:00 AM Eastern Time daily
+    // Using cron: '0 10 * * *' for 10:00 AM Eastern (considering daylight saving time)
+    cron.schedule('0 10 * * *', checkBirthdays, {
+        scheduled: true,
+        timezone: "America/New_York"
+    });
+});
+
+// Slash command handling
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+
+    const { commandName } = interaction;
+
+    if (commandName === 'setbirthday') {
+        await handleSetBirthday(interaction);
+    } else if (commandName === 'mybirthday') {
+        await handleMyBirthday(interaction);
+    } else if (commandName === 'listbirthdays') {
+        await handleListBirthdays(interaction);
+    }
+});
+
+async function handleSetBirthday(interaction) {
+    const day = interaction.options.getInteger('day');
+    const month = interaction.options.getInteger('month');
+    const year = interaction.options.getInteger('year');
+
+    // Validate day and month
+    if (day < 1 || day > 31) {
+        return await interaction.reply({
+            content: '❌ Day must be between 1 and 31.',
+            ephemeral: true
+        });
+    }
+
+    if (month < 1 || month > 12) {
+        return await interaction.reply({
+            content: '❌ Month must be between 1 and 12.',
+            ephemeral: true
+        });
+    }
+
+    // Validate day for specific months
+    const daysInMonth = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+    if (day > daysInMonth[month - 1]) {
+        return await interaction.reply({
+            content: `❌ Invalid day for month ${month}. This month has a maximum of ${daysInMonth[month - 1]} days.`,
+            ephemeral: true
+        });
+    }
+
+    // Validate year if provided
+    if (year && (year < 1900 || year > new Date().getFullYear())) {
+        return await interaction.reply({
+            content: '❌ Year must be between 1900 and the current year.',
+            ephemeral: true
+        });
+    }
+
+    try {
+        await database.setBirthday(
+            interaction.user.id,
+            interaction.user.username,
+            day,
+            month,
+            year
+        );
+
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        const birthdayString = year ? 
+            `${monthNames[month - 1]} ${day}, ${year}` : 
+            `${monthNames[month - 1]} ${day}`;
+
+        const embed = new EmbedBuilder()
+            .setColor('#00FF00')
+            .setTitle('🎂 Birthday Set Successfully!')
+            .setDescription(`Your birthday has been set to **${birthdayString}**`)
+            .setTimestamp();
+
+        await interaction.reply({ embeds: [embed], ephemeral: true });
+
+    } catch (error) {
+        console.error('Error setting birthday:', error);
+        await interaction.reply({
+            content: '❌ An error occurred while setting your birthday. Please try again.',
+            ephemeral: true
+        });
+    }
+}
+
+async function handleMyBirthday(interaction) {
+    try {
+        const birthday = await database.getBirthday(interaction.user.id);
+
+        if (!birthday) {
+            return await interaction.reply({
+                content: '❌ You haven\'t set your birthday yet! Use `/setbirthday` to set it.',
+                ephemeral: true
+            });
+        }
+
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        const birthdayString = birthday.year ? 
+            `${monthNames[birthday.month - 1]} ${birthday.day}, ${birthday.year}` : 
+            `${monthNames[birthday.month - 1]} ${birthday.day}`;
+
+        const embed = new EmbedBuilder()
+            .setColor('#0099FF')
+            .setTitle('🎂 Your Birthday')
+            .setDescription(`Your birthday is set to **${birthdayString}**`)
+            .setTimestamp();
+
+        await interaction.reply({ embeds: [embed], ephemeral: true });
+
+    } catch (error) {
+        console.error('Error getting birthday:', error);
+        await interaction.reply({
+            content: '❌ An error occurred while retrieving your birthday.',
+            ephemeral: true
+        });
+    }
+}
+
+async function handleListBirthdays(interaction) {
+    try {
+        const birthdays = await database.getAllBirthdays();
+
+        if (birthdays.length === 0) {
+            return await interaction.reply({
+                content: '📅 No birthdays have been set yet!',
+                ephemeral: true
+            });
+        }
+
+        const monthNames = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        let birthdayList = '';
+        birthdays.forEach(birthday => {
+            const dateString = `${monthNames[birthday.month - 1]} ${birthday.day}`;
+            birthdayList += `• **${birthday.username}** - ${dateString}\n`;
+        });
+
+        const embed = new EmbedBuilder()
+            .setColor('#FFD700')
+            .setTitle('🎂 Server Birthdays')
+            .setDescription(birthdayList || 'No birthdays found.')
+            .setTimestamp();
+
+        await interaction.reply({ embeds: [embed], ephemeral: true });
+
+    } catch (error) {
+        console.error('Error listing birthdays:', error);
+        await interaction.reply({
+            content: '❌ An error occurred while retrieving birthdays.',
+            ephemeral: true
+        });
+    }
+}
+
+async function checkBirthdays() {
+    console.log('🔍 Checking for birthdays...');
+    
+    const now = new Date();
+    const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
+    const month = easternTime.getMonth() + 1;
+    const day = easternTime.getDate();
+
+    try {
+        const todaysBirthdays = await database.getTodaysBirthdays(month, day);
+
+        if (todaysBirthdays.length === 0) {
+            console.log('📅 No birthdays today.');
+            return;
+        }
+
+        console.log(`🎉 Found ${todaysBirthdays.length} birthday(s) today!`);
+
+        const channel = client.channels.cache.get(config.birthdayChannelId);
+        if (!channel) {
+            console.error('❌ Birthday channel not found!');
+            return;
+        }
+
+        for (const birthday of todaysBirthdays) {
+            let message = `🎉 @everyone\n\n🎂 **Happy Birthday ${birthday.username}!** 🎂\n\n`;
+            
+            if (birthday.year) {
+                const age = easternTime.getFullYear() - birthday.year;
+                message += `🎈 You're turning **${age}** today! 🎈\n\n`;
+            }
+            
+            message += `Hope you have a wonderful day! 🎊`;
+
+            const embed = new EmbedBuilder()
+                .setColor('#FF69B4')
+                .setTitle('🎂 Birthday Celebration! 🎂')
+                .setDescription(message)
+                .setThumbnail('https://cdn.discordapp.com/emojis/587053858308227077.gif')
+                .setTimestamp();
+
+            await channel.send({ 
+                content: '@everyone',
+                embeds: [embed] 
+            });
+        }
+
+    } catch (error) {
+        console.error('Error checking birthdays:', error);
+    }
+}
+
+// Handle process termination
+process.on('SIGINT', () => {
+    console.log('\n🔄 Shutting down bot...');
+    database.close();
+    client.destroy();
+    process.exit(0);
+});
+
+// Login to Discord
+client.login(config.token); 

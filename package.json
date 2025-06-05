@@ -1,0 +1,24 @@
+{
+  "name": "discord-birthday-bot",
+  "version": "1.0.0",
+  "description": "A Discord bot that tracks and announces birthdays",
+  "main": "src/bot.js",
+  "scripts": {
+    "start": "node src/bot.js",
+    "dev": "node src/bot.js",
+    "deploy-commands": "node scripts/deploy-commands.js",
+    "docker:build": "docker build -f docker/Dockerfile -t birthday-bot .",
+    "docker:run": "echo 'Usage: docker run -d --name birthday_bot --restart unless-stopped -e TZ=America/New_York -e NODE_ENV=production -e DISCORD_TOKEN=your_token -e DISCORD_CLIENT_ID=your_client_id -e BIRTHDAY_CHANNEL_ID=your_channel_id -v ./data:/app/data birthday-bot'",
+    "docker:stop": "docker stop birthday_bot && docker rm birthday_bot",
+    "docker:logs": "docker logs -f birthday_bot",
+    "docker:deploy": "chmod +x scripts/docker-run.sh && echo 'Usage: ./scripts/docker-run.sh TOKEN CLIENT_ID CHANNEL_ID'"
+  },
+  "keywords": ["discord", "bot", "birthday"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "sqlite3": "^5.1.6",
+    "node-cron": "^3.0.3"
+  }
+} 

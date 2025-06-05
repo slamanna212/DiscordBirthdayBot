@@ -1,0 +1,40 @@
+# Node modules (will be installed in container)
+node_modules/
+
+# Database files (will be mounted as volume)
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# Development files
+.git/
+.gitignore
+README.md
+*.md
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Environment files
+.env*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Docker files (don't copy to container)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Backup files
+*.backup
+*.bak
+*.tmp 

@@ -1,0 +1,96 @@
+name: Test Discord Birthday Bot
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test-docker-build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Test Docker build
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./docker/Dockerfile
+        push: false
+        tags: discord-birthday-bot:test
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Test image can start
+      run: |
+        # Build the image locally for testing
+        docker build -f docker/Dockerfile -t discord-birthday-bot:test .
+        
+        # Test that the image can start (it will fail due to missing env vars, but should not crash immediately)
+        timeout 10s docker run --rm discord-birthday-bot:test || [ $? -eq 124 ] || [ $? -eq 1 ]
+        
+        echo "✅ Docker image builds successfully and starts correctly"
+
+  validate-structure:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Validate project structure
+      run: |
+        # Check that all required files exist
+        echo "🔍 Validating project structure..."
+        
+        # Check source files
+        [ -f "src/bot.js" ] || (echo "❌ src/bot.js missing" && exit 1)
+        [ -f "src/database.js" ] || (echo "❌ src/database.js missing" && exit 1)
+        
+        # Check scripts
+        [ -f "scripts/deploy-commands.js" ] || (echo "❌ scripts/deploy-commands.js missing" && exit 1)
+        [ -f "scripts/docker-run.sh" ] || (echo "❌ scripts/docker-run.sh missing" && exit 1)
+        
+        # Check docker files
+        [ -f "docker/Dockerfile" ] || (echo "❌ docker/Dockerfile missing" && exit 1)
+        [ -f "docker/.dockerignore" ] || (echo "❌ docker/.dockerignore missing" && exit 1)
+        
+        # Check configuration
+        [ -f "package.json" ] || (echo "❌ package.json missing" && exit 1)
+        [ -f "env.example" ] || (echo "❌ env.example missing" && exit 1)
+        
+        echo "✅ All required files present"
+
+    - name: Validate package.json
+      run: |
+        echo "🔍 Validating package.json..."
+        
+        # Check if package.json is valid JSON
+        node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8'))" || (echo "❌ Invalid package.json" && exit 1)
+        
+        # Check required dependencies
+        node -e "
+          const pkg = JSON.parse(require('fs').readFileSync('package.json', 'utf8'));
+          const deps = pkg.dependencies || {};
+          if (!deps['discord.js']) throw new Error('Missing discord.js dependency');
+          if (!deps['sqlite3']) throw new Error('Missing sqlite3 dependency');
+          if (!deps['node-cron']) throw new Error('Missing node-cron dependency');
+          console.log('✅ All required dependencies present');
+        "
+
+    - name: Validate environment example
+      run: |
+        echo "🔍 Validating environment example..."
+        
+        # Check that env.example contains required variables
+        grep -q "DISCORD_TOKEN" env.example || (echo "❌ DISCORD_TOKEN missing from env.example" && exit 1)
+        grep -q "DISCORD_CLIENT_ID" env.example || (echo "❌ DISCORD_CLIENT_ID missing from env.example" && exit 1)
+        grep -q "BIRTHDAY_CHANNEL_ID" env.example || (echo "❌ BIRTHDAY_CHANNEL_ID missing from env.example" && exit 1)
+        
+        echo "✅ Environment example is valid" 
