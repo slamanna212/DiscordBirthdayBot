@@ -56,6 +56,11 @@ const commands = [
         name: 'listbirthdays',
         description: 'List all birthdays in the server (admin only)',
         default_member_permissions: '0' // Requires administrator permission
+    },
+    {
+        name: 'testbirthday',
+        description: 'Send a test birthday message to the configured channel (admin only)',
+        default_member_permissions: '0' // Requires administrator permission
     }
 ];
 

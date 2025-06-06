@@ -193,6 +193,8 @@ client.on('interactionCreate', async interaction => {
         await handleMyBirthday(interaction);
     } else if (commandName === 'listbirthdays') {
         await handleListBirthdays(interaction);
+    } else if (commandName === 'testbirthday') {
+        await handleTestBirthday(interaction);
     }
 });
 
@@ -339,6 +341,56 @@ async function handleListBirthdays(interaction) {
         console.error('Error listing birthdays:', error);
         await interaction.reply({
             content: '❌ An error occurred while retrieving birthdays.',
+            ephemeral: true
+        });
+    }
+}
+
+async function handleTestBirthday(interaction) {
+    try {
+        const channel = client.channels.cache.get(config.birthdayChannelId);
+        
+        if (!channel) {
+            return await interaction.reply({
+                content: '❌ Birthday channel not found! Please check your configuration.',
+                ephemeral: true
+            });
+        }
+
+        // Create test birthday message using Ben Franklin as the test user
+        // Using 1706 as birth year (real historical birth year) to show age calculation
+        const testUsername = 'Ben Franklin';
+        const currentYear = new Date().getFullYear();
+        const testAge = currentYear - 1706; // Ben Franklin was born in 1706
+        
+        let message = `🎉\n\n🎂 **Happy Birthday ${testUsername}!** 🎂\n\n`;
+        message += `🎈 You're turning **${testAge}** today! 🎈\n\n`;
+        message += `Hope you have a wonderful day! 🎊`;
+
+        const embed = new EmbedBuilder()
+            .setColor('#ac1cfe')
+            .setTitle('🎂 Birthday Celebration! 🎂')
+            .setDescription(message)
+            .setImage('https://slamanna.com/rehero/hbd.png')
+            .setTimestamp()
+            .setFooter({ text: 'This is a test message' });
+
+        await channel.send({ 
+            embeds: [embed] 
+        });
+
+        // Confirm to the admin that the test was sent
+        await interaction.reply({
+            content: `✅ Test birthday message sent to <#${config.birthdayChannelId}> for ${testUsername}!`,
+            ephemeral: true
+        });
+
+        console.log(`🧪 Test birthday message sent by ${interaction.user.tag} for ${testUsername}`);
+
+    } catch (error) {
+        console.error('Error sending test birthday:', error);
+        await interaction.reply({
+            content: '❌ An error occurred while sending the test birthday message.',
             ephemeral: true
         });
     }
