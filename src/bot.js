@@ -65,7 +65,17 @@ if (!config.token || !config.clientId || !config.birthdayChannelId) {
 }
 
 // Initialize database
-const database = new Database();
+let database;
+try {
+    database = new Database();
+} catch (error) {
+    console.error('❌ Fatal: Failed to initialize database:', error);
+    console.error('🔍 This usually means:');
+    console.error('   - Database directory does not exist and cannot be created');
+    console.error('   - Permission issues with the data directory');
+    console.error('   - SQLite is not properly installed');
+    process.exit(1);
+}
 
 // Create Discord client
 const client = new Client({

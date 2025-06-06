@@ -38,15 +38,16 @@ COPY src/ ./src/
 COPY scripts/ ./scripts/
 COPY .git/ ./.git/
 
-# Create directory for database
-RUN mkdir -p /app/data
-
 # Set timezone to Eastern Time for proper birthday scheduling
 ENV TZ=America/New_York
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S botuser -u 1001
+
+# Create directory for database with proper permissions
+RUN mkdir -p /app/data && \
+    chown -R botuser:nodejs /app/data
 
 # Change ownership of app directory to botuser
 RUN chown -R botuser:nodejs /app

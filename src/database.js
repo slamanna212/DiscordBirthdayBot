@@ -12,6 +12,11 @@ class Database {
         
         if (fs.existsSync(dataDir) || process.env.NODE_ENV === 'production') {
             // Use data directory (Docker volume mount location)
+            // Ensure the data directory exists
+            if (!fs.existsSync(dataDir)) {
+                console.log(`📁 Creating data directory: ${dataDir}`);
+                fs.mkdirSync(dataDir, { recursive: true });
+            }
             dbPath = path.join(__dirname, '..', 'data', 'birthdays.db');
         } else {
             // Fallback to root directory for local development
@@ -22,9 +27,23 @@ class Database {
         console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
         console.log(`   Database path: ${dbPath}`);
         console.log(`   Data directory exists: ${fs.existsSync(dataDir)}`);
+        console.log(`   Database file exists: ${fs.existsSync(dbPath)}`);
         
-        this.db = new sqlite3.Database(dbPath);
-        this.init();
+        // Ensure the directory containing the database file exists
+        const dbDir = path.dirname(dbPath);
+        if (!fs.existsSync(dbDir)) {
+            console.log(`📁 Creating database directory: ${dbDir}`);
+            fs.mkdirSync(dbDir, { recursive: true });
+        }
+        
+        try {
+            this.db = new sqlite3.Database(dbPath);
+            console.log(`✅ Database connection established: ${dbPath}`);
+            this.init();
+        } catch (error) {
+            console.error(`❌ Failed to create database connection:`, error);
+            throw error;
+        }
     }
 
     init() {
@@ -41,9 +60,21 @@ class Database {
 
         this.db.run(createTableQuery, (err) => {
             if (err) {
-                console.error('Error creating birthdays table:', err);
+                console.error('❌ Error creating birthdays table:', err);
+                throw err;
             } else {
-                console.log('Database initialized successfully');
+                console.log('✅ Database table initialized successfully');
+                
+                // Test the database connection by running a simple query
+                this.db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='birthdays'", (err, row) => {
+                    if (err) {
+                        console.error('❌ Database connection test failed:', err);
+                    } else if (row) {
+                        console.log('✅ Database connection test passed');
+                    } else {
+                        console.error('❌ Birthday table was not created properly');
+                    }
+                });
             }
         });
     }
