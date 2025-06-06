@@ -59,17 +59,18 @@ You'll need these values from the Discord Developer Portal:
 
 ### 4. Run the Bot Using Docker
  ```docker
- docker run -d \
-   --name birthday_bot \
-   --restart unless-stopped \
-   -e TZ=America/New_York \
-   -e BIRTHDAY_NOTIFICATION_HOUR=10 \
-   -e NODE_ENV=production \
-   -e DISCORD_TOKEN="your_bot_token" \
-   -e DISCORD_CLIENT_ID="your_client_id" \
-   -e BIRTHDAY_CHANNEL_ID="your_channel_id" \
-   -v ./data:/app/data \
-   ghcr.io/slamanna212/discord-birthday-bot:latest
+    docker run -d \
+     --name birthday_bot \
+     --restart unless-stopped \
+     -e TZ=America/New_York \
+     -e BIRTHDAY_NOTIFICATION_HOUR=10 \
+     -e NODE_ENV=production \
+     -e DISCORD_TOKEN="your_bot_token" \
+     -e DISCORD_CLIENT_ID="your_client_id" \
+     -e BIRTHDAY_CHANNEL_ID="your_channel_id" \
+     -e BIRTHDAY_ROLE_ID="your_birthday_role_id" \
+     -v ./data:/app/data \
+     ghcr.io/slamanna212/discord-birthday-bot:latest
    ```
 
 ## Environment Variables
@@ -91,6 +92,7 @@ The bot uses several environment variables for configuration. Here's a complete 
 |----------|-------------|---------|--------------|---------|
 | `TZ` | Timezone for birthday notifications | `America/New_York` | Any valid IANA timezone | `America/Los_Angeles`, `UTC`, `Europe/London` |
 | `BIRTHDAY_NOTIFICATION_HOUR` | Hour to send birthday notifications (24-hour format) | `10` | `0-23` | `6` (6:00 AM), `18` (6:00 PM) |
+| `BIRTHDAY_ROLE_ID` | Role ID to assign to users on their birthday | `None` | Discord Role ID | `123456789012345678` |
 
 
 ### Getting Environment Variable Values
@@ -105,6 +107,13 @@ The bot uses several environment variables for configuration. Here's a complete 
 1. Enable Developer Mode in Discord (User Settings → Advanced → Developer Mode)
 2. Right-click the channel where you want birthday announcements
 3. Select "Copy ID"
+
+#### Birthday Role ID (Optional)
+1. Enable Developer Mode in Discord (User Settings → Advanced → Developer Mode)
+2. Go to Server Settings → Roles
+3. Right-click the role you want to use for birthdays
+4. Select "Copy ID"
+5. **Note**: The bot needs "Manage Roles" permission and the birthday role must be below the bot's highest role in the hierarchy
 
 #### Timezone Values
 Use standard IANA timezone names:

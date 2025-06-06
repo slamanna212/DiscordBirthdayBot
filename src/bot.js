@@ -66,7 +66,8 @@ console.log(`   Current time (Configured): ${new Date().toLocaleString("en-US", 
 const config = {
     token: process.env.DISCORD_TOKEN,
     clientId: process.env.DISCORD_CLIENT_ID,
-    birthdayChannelId: process.env.BIRTHDAY_CHANNEL_ID
+    birthdayChannelId: process.env.BIRTHDAY_CHANNEL_ID,
+    birthdayRoleId: process.env.BIRTHDAY_ROLE_ID // Optional: role to assign on birthdays
 };
 
 // Validate required environment variables
@@ -95,7 +96,8 @@ try {
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMembers // Required for role management
     ]
 });
 
@@ -137,6 +139,13 @@ client.once('ready', () => {
                        NOTIFICATION_HOUR <= 12 ? `${NOTIFICATION_HOUR}:00 AM` : 
                        `${NOTIFICATION_HOUR - 12}:00 PM`;
     console.log(`📅 Birthday checking scheduled for ${timeDisplay} ${TIMEZONE} time`);
+    
+    // Log birthday role configuration
+    if (config.birthdayRoleId) {
+        console.log(`🎭 Birthday role configured: ${config.birthdayRoleId}`);
+    } else {
+        console.log(`🎭 No birthday role configured (BIRTHDAY_ROLE_ID not set)`);
+    }
     
     // Set bot status to "Listening to Happy Birthday"
     client.user.setPresence({
@@ -350,6 +359,17 @@ async function checkBirthdays() {
 
     try {
         const todaysBirthdays = await database.getTodaysBirthdays(month, day);
+        const channel = client.channels.cache.get(config.birthdayChannelId);
+        
+        if (!channel) {
+            console.error('❌ Birthday channel not found!');
+            return;
+        }
+
+        // Handle birthday role management if configured
+        if (config.birthdayRoleId) {
+            await manageBirthdayRoles(todaysBirthdays, channel.guild);
+        }
 
         if (todaysBirthdays.length === 0) {
             console.log('📅 No birthdays today.');
@@ -357,12 +377,6 @@ async function checkBirthdays() {
         }
 
         console.log(`🎉 Found ${todaysBirthdays.length} birthday(s) today!`);
-
-        const channel = client.channels.cache.get(config.birthdayChannelId);
-        if (!channel) {
-            console.error('❌ Birthday channel not found!');
-            return;
-        }
 
         for (const birthday of todaysBirthdays) {
             let message = `🎉 @everyone\n\n🎂 **Happy Birthday ${birthday.username}!** 🎂\n\n`;
@@ -389,6 +403,65 @@ async function checkBirthdays() {
 
     } catch (error) {
         console.error('Error checking birthdays:', error);
+    }
+}
+
+// Function to manage birthday roles
+async function manageBirthdayRoles(todaysBirthdays, guild) {
+    if (!config.birthdayRoleId) {
+        return; // No birthday role configured
+    }
+
+    try {
+        console.log('🎭 Managing birthday roles...');
+        
+        // Get the birthday role
+        const birthdayRole = await guild.roles.fetch(config.birthdayRoleId);
+        if (!birthdayRole) {
+            console.error(`❌ Birthday role with ID ${config.birthdayRoleId} not found!`);
+            return;
+        }
+
+        console.log(`🎭 Found birthday role: ${birthdayRole.name}`);
+
+        // Get all members who currently have the birthday role
+        const membersWithRole = birthdayRole.members;
+        console.log(`👥 Currently ${membersWithRole.size} members have the birthday role`);
+
+        // Create a set of user IDs who should have the role today
+        const todaysBirthdayUserIds = new Set(todaysBirthdays.map(b => b.userId));
+
+        // Remove role from members who no longer have birthdays
+        for (const [memberId, member] of membersWithRole) {
+            if (!todaysBirthdayUserIds.has(memberId)) {
+                try {
+                    await member.roles.remove(birthdayRole);
+                    console.log(`🎭 Removed birthday role from ${member.user.username}`);
+                } catch (error) {
+                    console.error(`❌ Failed to remove birthday role from ${member.user.username}:`, error.message);
+                }
+            }
+        }
+
+        // Add role to members who have birthdays today
+        for (const birthday of todaysBirthdays) {
+            try {
+                const member = await guild.members.fetch(birthday.userId);
+                if (member && !member.roles.cache.has(config.birthdayRoleId)) {
+                    await member.roles.add(birthdayRole);
+                    console.log(`🎭 Added birthday role to ${birthday.username}`);
+                }
+            } catch (error) {
+                if (error.code === 10007) {
+                    console.warn(`⚠️ Member ${birthday.username} (${birthday.userId}) no longer in server`);
+                } else {
+                    console.error(`❌ Failed to add birthday role to ${birthday.username}:`, error.message);
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error('❌ Error managing birthday roles:', error);
     }
 }
 
