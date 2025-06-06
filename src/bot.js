@@ -392,7 +392,7 @@ async function checkBirthdays() {
                 .setColor('#ac1cfe')
                 .setTitle('🎂 Birthday Celebration! 🎂')
                 .setDescription(message)
-                .setThumbnail('https://slamanna.com/rehero/hbd.png')
+                .setImage('https://slamanna.com/rehero/hbd.png')
                 .setTimestamp();
 
             await channel.send({ 
