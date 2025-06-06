@@ -54,7 +54,7 @@ You'll need these values from the Discord Developer Portal:
    docker run --rm \
      -e DISCORD_TOKEN="your_bot_token" \
      -e DISCORD_CLIENT_ID="your_client_id" \
-     ghcr.io/slamanna212/discord-birthday-bot:latest \
+     ghcr.io/slamanna212/discordbirthdaybot:latest \
      node scripts/deploy-commands.js
    ```
 
