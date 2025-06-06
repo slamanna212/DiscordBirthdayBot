@@ -1,0 +1,65 @@
+version: 2
+updates:
+  # Update npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    # Limit the number of open pull requests for npm
+    open-pull-requests-limit: 5
+    # Group updates by type
+    groups:
+      production-dependencies:
+        patterns:
+          - "discord.js"
+          - "sqlite3"
+          - "node-cron"
+      development-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "discord.js"
+          - "sqlite3" 
+          - "node-cron"
+    # Add labels to the pull requests
+    labels:
+      - "dependencies"
+      - "automated"
+    # Prefix commit messages
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps-dev"
+      include: "scope"
+    # Ignore specific versions or dependencies if needed
+    # ignore:
+    #   - dependency-name: "discord.js"
+    #     versions: ["15.x"]
+    # Auto-merge minor and patch updates for production dependencies
+    # (requires enabling auto-merge in repository settings)
+    reviewers:
+      - "slamanna212"
+    assignees:
+      - "slamanna212"
+
+  # Update GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 2
+    labels:
+      - "github-actions"
+      - "automated"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    reviewers:
+      - "slamanna212"
+    assignees:
+      - "slamanna212" 
