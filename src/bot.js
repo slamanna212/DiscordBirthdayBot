@@ -85,6 +85,32 @@ const client = new Client({
     ]
 });
 
+// Write health status to file for Docker health check
+function writeHealthStatus() {
+    const fs = require('fs');
+    const path = require('path');
+    
+    const health = {
+        status: client.isReady() ? 'healthy' : 'unhealthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        version: getGitVersion(),
+        discord: {
+            connected: client.isReady(),
+            user: client.user ? client.user.tag : null,
+            guilds: client.guilds.cache.size,
+            ping: client.ws.ping
+        }
+    };
+    
+    try {
+        const healthFile = path.join(__dirname, '..', 'data', 'health.json');
+        fs.writeFileSync(healthFile, JSON.stringify(health, null, 2));
+    } catch (error) {
+        console.error('Failed to write health status:', error.message);
+    }
+}
+
 // Bot ready event
 client.once('ready', () => {
     console.log(`✅ ${client.user.tag} is online and ready!`);
@@ -100,6 +126,9 @@ client.once('ready', () => {
     });
     console.log(`🎵 Bot status set to: Listening to Happy Birthday`);
     
+    // Write initial health status
+    writeHealthStatus();
+    
     // Schedule birthday check for 10:00 AM Eastern Time daily
     // Using cron: '0 10 * * *' for 10:00 AM Eastern (considering daylight saving time)
     cron.schedule('0 10 * * *', checkBirthdays, {
@@ -107,10 +136,11 @@ client.once('ready', () => {
         timezone: "America/New_York"
     });
     
-    // Schedule health check logging every 5 minutes
-    cron.schedule('*/5 * * * *', () => {
+    // Schedule health check logging and file updates every minute
+    cron.schedule('* * * * *', () => {
         const health = healthCheck();
         console.log(`💚 Health Check - Status: ${health.status}, Uptime: ${Math.floor(health.uptime)}s, Ping: ${health.discord.ping}ms`);
+        writeHealthStatus();
     }, {
         scheduled: true,
         timezone: "America/New_York"
@@ -370,10 +400,50 @@ function healthCheck() {
 
 // Health check endpoint for Docker
 if (process.argv.includes('--health-check')) {
-    const health = healthCheck();
-    console.log(JSON.stringify(health, null, 2));
-    process.exit(health.status === 'healthy' ? 0 : 1);
+    // For Docker health check, we'll check simpler indicators since we're in a separate process
+    const health = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: getGitVersion(),
+        database: {
+            accessible: false
+        },
+        timezone: {
+            configured: process.env.TZ,
+            current: new Date().toString(),
+            eastern: new Date().toLocaleString("en-US", {timeZone: "America/New_York"})
+        }
+    };
+    
+    // Test database connection independently
+    try {
+        const Database = require('./database');
+        const testDb = new Database();
+        health.database.accessible = true;
+        console.log(JSON.stringify(health, null, 2));
+        process.exit(0);
+    } catch (error) {
+        health.status = 'unhealthy';
+        health.database.error = error.message;
+        console.log(JSON.stringify(health, null, 2));
+        process.exit(1);
+    }
 }
+
+// Handle Discord disconnection
+client.on('disconnect', () => {
+    console.log('⚠️ Bot disconnected from Discord');
+    writeHealthStatus();
+});
+
+client.on('error', (error) => {
+    console.error('❌ Discord client error:', error);
+    writeHealthStatus();
+});
+
+client.on('warn', (warning) => {
+    console.warn('⚠️ Discord client warning:', warning);
+});
 
 // Handle process termination
 process.on('SIGINT', () => {

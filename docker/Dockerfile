@@ -56,9 +56,9 @@ USER botuser
 # Expose port (not really needed for Discord bot, but good practice)
 EXPOSE 3000
 
-# Health check - verify bot is connected and ready
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD node src/bot.js --health-check || exit 1
+# Health check - verify bot is connected and ready using health status file
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD node scripts/docker-health-check.js || exit 1
 
 # Start the bot
 CMD ["node", "src/bot.js"] 
