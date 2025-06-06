@@ -54,9 +54,9 @@ USER botuser
 # Expose port (not really needed for Discord bot, but good practice)
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "console.log('Bot is running')" || exit 1
+# Health check - verify bot is connected and ready
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD node src/bot.js --health-check || exit 1
 
 # Start the bot
 CMD ["node", "src/bot.js"] 

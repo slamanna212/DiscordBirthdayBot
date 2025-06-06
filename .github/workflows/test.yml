@@ -27,15 +27,34 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
 
-    - name: Test image can start
+    - name: Test image functionality
       run: |
         # Build the image locally for testing
         docker build -f docker/Dockerfile -t discord-birthday-bot:test .
         
         # Test that the image can start (it will fail due to missing env vars, but should not crash immediately)
+        echo "🔍 Testing basic image startup..."
         timeout 10s docker run --rm discord-birthday-bot:test || [ $? -eq 124 ] || [ $? -eq 1 ]
         
-        echo "✅ Docker image builds successfully and starts correctly"
+        # Test health check functionality (without Discord connection)
+        echo "🔍 Testing health check script exists and runs..."
+        if docker run --rm discord-birthday-bot:test test -f scripts/health-check.js; then
+          echo "✅ Health check script found"
+        else
+          echo "❌ Health check script missing"
+          exit 1
+        fi
+        
+        # Test timezone script
+        echo "🔍 Testing timezone configuration..."
+        if docker run --rm discord-birthday-bot:test node scripts/test-timezone.js; then
+          echo "✅ Timezone configuration works"
+        else
+          echo "❌ Timezone configuration failed"
+          exit 1
+        fi
+        
+        echo "✅ Docker image builds successfully and all tests pass"
 
   validate-structure:
     runs-on: ubuntu-latest
@@ -56,6 +75,8 @@ jobs:
         # Check scripts
         [ -f "scripts/deploy-commands.js" ] || (echo "❌ scripts/deploy-commands.js missing" && exit 1)
         [ -f "scripts/docker-run.sh" ] || (echo "❌ scripts/docker-run.sh missing" && exit 1)
+        [ -f "scripts/health-check.js" ] || (echo "❌ scripts/health-check.js missing" && exit 1)
+        [ -f "scripts/test-timezone.js" ] || (echo "❌ scripts/test-timezone.js missing" && exit 1)
         
         # Check docker files
         [ -f "docker/Dockerfile" ] || (echo "❌ docker/Dockerfile missing" && exit 1)

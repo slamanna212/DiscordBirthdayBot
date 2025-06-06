@@ -8,10 +8,13 @@
     "dev": "node src/bot.js",
     "deploy-commands": "node scripts/deploy-commands.js",
     "test-timezone": "node scripts/test-timezone.js",
+    "health-check": "node scripts/health-check.js",
     "docker:build": "docker build -f docker/Dockerfile -t birthday-bot .",
     "docker:run": "echo 'Usage: docker run -d --name birthday_bot --restart unless-stopped -e TZ=America/New_York -e NODE_ENV=production -e DISCORD_TOKEN=your_token -e DISCORD_CLIENT_ID=your_client_id -e BIRTHDAY_CHANNEL_ID=your_channel_id -v ./data:/app/data birthday-bot'",
     "docker:stop": "docker stop birthday_bot && docker rm birthday_bot",
     "docker:logs": "docker logs -f birthday_bot",
+    "docker:health": "docker exec birthday_bot node scripts/health-check.js",
+    "docker:inspect": "docker inspect birthday_bot --format='{{json .State.Health}}' | jq",
     "docker:deploy": "chmod +x scripts/docker-run.sh && echo 'Usage: ./scripts/docker-run.sh TOKEN CLIENT_ID CHANNEL_ID'",
     "docker:test": "chmod +x scripts/test-docker-build.sh && ./scripts/test-docker-build.sh"
   },

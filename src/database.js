@@ -1,12 +1,27 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
 class Database {
     constructor() {
-        // Use data directory for Docker volume mounting, fallback to root directory for local dev
-        const dbPath = process.env.NODE_ENV === 'production' 
-            ? path.join(__dirname, '..', 'data', 'birthdays.db')
-            : path.join(__dirname, '..', 'birthdays.db');
+        // Determine database path - prioritize data directory for Docker, fallback for local dev
+        let dbPath;
+        
+        // Check if we're in Docker (data directory exists) or production mode
+        const dataDir = path.join(__dirname, '..', 'data');
+        
+        if (fs.existsSync(dataDir) || process.env.NODE_ENV === 'production') {
+            // Use data directory (Docker volume mount location)
+            dbPath = path.join(__dirname, '..', 'data', 'birthdays.db');
+        } else {
+            // Fallback to root directory for local development
+            dbPath = path.join(__dirname, '..', 'birthdays.db');
+        }
+        
+        console.log(`📁 Database Configuration:`);
+        console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
+        console.log(`   Database path: ${dbPath}`);
+        console.log(`   Data directory exists: ${fs.existsSync(dataDir)}`);
         
         this.db = new sqlite3.Database(dbPath);
         this.init();

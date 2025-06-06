@@ -52,6 +52,15 @@ client.once('ready', () => {
         scheduled: true,
         timezone: "America/New_York"
     });
+    
+    // Schedule health check logging every 5 minutes
+    cron.schedule('*/5 * * * *', () => {
+        const health = healthCheck();
+        console.log(`💚 Health Check - Status: ${health.status}, Uptime: ${Math.floor(health.uptime)}s, Ping: ${health.discord.ping}ms`);
+    }, {
+        scheduled: true,
+        timezone: "America/New_York"
+    });
 });
 
 // Slash command handling
@@ -272,6 +281,43 @@ async function checkBirthdays() {
     } catch (error) {
         console.error('Error checking birthdays:', error);
     }
+}
+
+// Health check function
+function healthCheck() {
+    const health = {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        discord: {
+            connected: client.isReady(),
+            user: client.user ? client.user.tag : null,
+            guilds: client.guilds.cache.size,
+            ping: client.ws.ping
+        },
+        database: {
+            connected: database.db ? true : false
+        },
+        timezone: {
+            configured: process.env.TZ,
+            current: new Date().toString(),
+            eastern: new Date().toLocaleString("en-US", {timeZone: "America/New_York"})
+        }
+    };
+    
+    // Check if bot is actually ready
+    if (!client.isReady()) {
+        health.status = 'unhealthy';
+    }
+    
+    return health;
+}
+
+// Health check endpoint for Docker
+if (process.argv.includes('--health-check')) {
+    const health = healthCheck();
+    console.log(JSON.stringify(health, null, 2));
+    process.exit(health.status === 'healthy' ? 0 : 1);
 }
 
 // Handle process termination

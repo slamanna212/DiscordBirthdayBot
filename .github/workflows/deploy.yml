@@ -84,19 +84,46 @@ jobs:
       run: |
         echo "✅ Verifying deployment..."
         
-        # Wait a moment for container to start
-        sleep 5
+        # Wait for container to start and be ready
+        echo "⏳ Waiting for container to be ready..."
+        sleep 10
         
         # Check if container is running
-        if docker ps | grep -q "birthday_bot_${{ inputs.environment }}"; then
-          echo "✅ Container is running successfully"
-          
-          # Show container logs
-          echo "📋 Container logs:"
-          docker logs birthday_bot_${{ inputs.environment }} --tail 20
-        else
+        if ! docker ps | grep -q "birthday_bot_${{ inputs.environment }}"; then
           echo "❌ Container failed to start"
           docker logs birthday_bot_${{ inputs.environment }} || true
+          exit 1
+        fi
+        
+        echo "✅ Container is running"
+        
+        # Wait for bot to be ready (Docker health check)
+        echo "⏳ Waiting for bot to be ready..."
+        for i in {1..12}; do
+          if docker inspect birthday_bot_${{ inputs.environment }} --format='{{.State.Health.Status}}' | grep -q "healthy"; then
+            echo "✅ Bot is healthy and ready!"
+            break
+          elif [ $i -eq 12 ]; then
+            echo "❌ Bot failed to become healthy within 60 seconds"
+            echo "📋 Container logs:"
+            docker logs birthday_bot_${{ inputs.environment }} --tail 30
+            echo "🔍 Health status:"
+            docker inspect birthday_bot_${{ inputs.environment }} --format='{{json .State.Health}}' || true
+            exit 1
+          else
+            echo "⏳ Attempt $i/12 - Waiting for health check..."
+            sleep 5
+          fi
+        done
+        
+        # Run detailed health check
+        echo "🔍 Running detailed health check..."
+        if docker exec birthday_bot_${{ inputs.environment }} node scripts/health-check.js; then
+          echo "✅ Detailed health check passed!"
+        else
+          echo "❌ Detailed health check failed"
+          echo "📋 Recent container logs:"
+          docker logs birthday_bot_${{ inputs.environment }} --tail 20
           exit 1
         fi
 
