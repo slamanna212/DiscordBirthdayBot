@@ -46,6 +46,16 @@ client.once('ready', () => {
     console.log(`✅ ${client.user.tag} is online and ready!`);
     console.log(`📅 Birthday checking scheduled for 10:00 AM Eastern Time`);
     
+    // Set bot status to "Listening to Happy Birthday"
+    client.user.setPresence({
+        activities: [{
+            name: 'Happy Birthday',
+            type: 2 // LISTENING type
+        }],
+        status: 'online'
+    });
+    console.log(`🎵 Bot status set to: Listening to Happy Birthday`);
+    
     // Schedule birthday check for 10:00 AM Eastern Time daily
     // Using cron: '0 10 * * *' for 10:00 AM Eastern (considering daylight saving time)
     cron.schedule('0 10 * * *', checkBirthdays, {
