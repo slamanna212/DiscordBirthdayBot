@@ -1,9 +1,43 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const cron = require('node-cron');
 const Database = require('./database');
+const { execSync } = require('child_process');
 
 // Set timezone to Eastern Time for the entire Node.js process
 process.env.TZ = 'America/New_York';
+
+// Get git version information
+function getGitVersion() {
+    try {
+        const commitHash = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim().substring(0, 8);
+        const commitMessage = execSync('git log -1 --pretty=%s', { encoding: 'utf8' }).trim();
+        const commitDate = execSync('git log -1 --pretty=%ci', { encoding: 'utf8' }).trim();
+        const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
+        
+        return {
+            hash: commitHash,
+            message: commitMessage,
+            date: commitDate,
+            branch: branch
+        };
+    } catch (error) {
+        return {
+            hash: 'unknown',
+            message: 'Git not available',
+            date: 'unknown',
+            branch: 'unknown'
+        };
+    }
+}
+
+// Log startup information
+const version = getGitVersion();
+console.log('🚀 Discord Birthday Bot Starting...');
+console.log('=====================================');
+console.log(`📦 Version: ${version.hash} (${version.branch})`);
+console.log(`💬 Commit: ${version.message}`);
+console.log(`📅 Date: ${version.date}`);
+console.log('');
 
 // Log current timezone information for debugging
 console.log('🕐 Timezone Configuration:');
@@ -299,6 +333,7 @@ function healthCheck() {
         status: 'healthy',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
+        version: getGitVersion(),
         discord: {
             connected: client.isReady(),
             user: client.user ? client.user.tag : null,

@@ -22,7 +22,7 @@ RUN if [ -f package-lock.json ]; then npm ci --only=production; else npm install
 FROM node:18-alpine AS production
 
 # Install runtime dependencies and timezone data
-RUN apk add --no-cache sqlite tzdata
+RUN apk add --no-cache sqlite tzdata git
 
 # Set working directory
 WORKDIR /app
@@ -36,6 +36,7 @@ COPY package*.json ./
 # Copy application files
 COPY src/ ./src/
 COPY scripts/ ./scripts/
+COPY .git/ ./.git/
 
 # Create directory for database
 RUN mkdir -p /app/data

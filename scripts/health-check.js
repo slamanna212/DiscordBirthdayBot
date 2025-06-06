@@ -20,6 +20,11 @@ try {
     console.log(`   Uptime: ${Math.floor(health.uptime)} seconds`);
     console.log(`   Timestamp: ${health.timestamp}`);
     
+    console.log('\n📦 Version Information:');
+    console.log(`   Commit: ${health.version.hash} (${health.version.branch})`);
+    console.log(`   Message: ${health.version.message}`);
+    console.log(`   Date: ${health.version.date}`);
+    
     console.log('\n🤖 Discord Connection:');
     console.log(`   Connected: ${health.discord.connected}`);
     console.log(`   Bot User: ${health.discord.user || 'Not connected'}`);
