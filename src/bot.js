@@ -375,10 +375,10 @@ async function checkBirthdays() {
             message += `Hope you have a wonderful day! 🎊`;
 
             const embed = new EmbedBuilder()
-                .setColor('#FF69B4')
+                .setColor('#ac1cfe')
                 .setTitle('🎂 Birthday Celebration! 🎂')
                 .setDescription(message)
-                .setThumbnail('https://cdn.discordapp.com/emojis/587053858308227077.gif')
+                .setThumbnail('https://slamanna.com/rehero/hbd.png')
                 .setTimestamp();
 
             await channel.send({ 
