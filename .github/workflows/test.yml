@@ -54,6 +54,15 @@ jobs:
           exit 1
         fi
         
+        # Test Node.js version
+        echo "🔍 Testing Node.js version..."
+        if docker run --rm discord-birthday-bot:test node scripts/test-node-version.js; then
+          echo "✅ Node.js version is correct"
+        else
+          echo "❌ Node.js version check failed"
+          exit 1
+        fi
+        
         echo "✅ Docker image builds successfully and all tests pass"
 
   validate-structure:

@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 # Install build dependencies for native modules (like sqlite3)
 RUN apk add --no-cache \
@@ -19,7 +19,7 @@ COPY package*.json ./
 RUN if [ -f package-lock.json ]; then npm ci --only=production; else npm install --only=production; fi && npm cache clean --force
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 
 # Install runtime dependencies and timezone data
 RUN apk add --no-cache sqlite tzdata git

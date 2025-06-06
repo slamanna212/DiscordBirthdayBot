@@ -125,7 +125,7 @@ The easiest way to deploy the bot, especially on Linux servers:
 When moving from Windows to Linux without Docker:
 
 1. Copy all files to your Linux server
-2. Install Node.js and npm on Linux
+2. Install Node.js 22+ and npm on Linux
 3. Run `npm install` to install dependencies for Linux
 4. Use a process manager like PM2 for production:
 

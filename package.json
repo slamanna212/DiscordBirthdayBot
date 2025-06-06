@@ -8,6 +8,7 @@
     "dev": "node src/bot.js",
     "deploy-commands": "node scripts/deploy-commands.js",
     "test-timezone": "node scripts/test-timezone.js",
+    "test-node-version": "node scripts/test-node-version.js",
     "health-check": "node scripts/health-check.js",
     "docker-health-check": "node scripts/docker-health-check.js",
     "test-docker-permissions": "node scripts/test-docker-permissions.js",
@@ -23,6 +24,9 @@
   "keywords": ["discord", "bot", "birthday"],
   "author": "",
   "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "dependencies": {
     "discord.js": "^14.14.1",
     "sqlite3": "^5.1.6",
