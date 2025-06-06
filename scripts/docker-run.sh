@@ -14,8 +14,22 @@ fi
 
 
 # Create data directory for database persistence
-echo "📁 Creating data directory..."
+echo "📁 Creating data directory with proper permissions..."
 mkdir -p ./data
+
+# Set permissions for the container user (UID 1001, GID 1001)
+# This ensures the botuser in the container can write to the mounted volume
+echo "🔧 Setting permissions for container user (UID 1001:1001)..."
+if command -v chown &> /dev/null; then
+    sudo chown -R 1001:1001 ./data 2>/dev/null || {
+        echo "⚠️  Could not set ownership to 1001:1001, trying current user..."
+        # Fallback: make directory writable by all users
+        chmod 777 ./data
+    }
+else
+    echo "⚠️  chown not available, making directory world-writable..."
+    chmod 777 ./data
+fi
 
 # Check if required arguments are provided
 if [ $# -lt 3 ]; then
@@ -54,6 +68,20 @@ echo "🚀 Starting Discord Birthday Bot..."
 # Stop any existing container
 docker stop birthday_bot 2>/dev/null || true
 docker rm birthday_bot 2>/dev/null || true
+
+# Test permissions first
+echo "🧪 Testing Docker permissions..."
+docker run --rm \
+    -e NODE_ENV=production \
+    -v "$(pwd)/data:/app/data" \
+    birthday-bot node scripts/test-docker-permissions.js
+
+if [ $? -ne 0 ]; then
+    echo "❌ Permission test failed. Please check the logs above."
+    exit 1
+fi
+
+echo "✅ Permission test passed!"
 
 # Run the bot container
 docker run -d \

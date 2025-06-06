@@ -9,6 +9,7 @@
     "deploy-commands": "node scripts/deploy-commands.js",
     "test-timezone": "node scripts/test-timezone.js",
     "health-check": "node scripts/health-check.js",
+    "test-docker-permissions": "node scripts/test-docker-permissions.js",
     "docker:build": "docker build -f docker/Dockerfile -t birthday-bot .",
     "docker:run": "echo 'Usage: docker run -d --name birthday_bot --restart unless-stopped -e TZ=America/New_York -e NODE_ENV=production -e DISCORD_TOKEN=your_token -e DISCORD_CLIENT_ID=your_client_id -e BIRTHDAY_CHANNEL_ID=your_channel_id -v ./data:/app/data birthday-bot'",
     "docker:stop": "docker stop birthday_bot && docker rm birthday_bot",

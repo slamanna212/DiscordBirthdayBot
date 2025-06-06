@@ -36,6 +36,25 @@ class Database {
             fs.mkdirSync(dbDir, { recursive: true });
         }
         
+        // Check permissions on the data directory
+        try {
+            const stats = fs.statSync(dbDir);
+            console.log(`📋 Directory permissions:`);
+            console.log(`   Path: ${dbDir}`);
+            console.log(`   Mode: ${stats.mode.toString(8)}`);
+            console.log(`   UID: ${stats.uid}, GID: ${stats.gid}`);
+            console.log(`   Process UID: ${process.getuid()}, GID: ${process.getgid()}`);
+            
+            // Test if we can write to the directory
+            const testFile = path.join(dbDir, 'test-write-' + Date.now() + '.tmp');
+            fs.writeFileSync(testFile, 'test');
+            fs.unlinkSync(testFile);
+            console.log(`✅ Write test successful in ${dbDir}`);
+        } catch (error) {
+            console.error(`❌ Permission error in ${dbDir}:`, error.message);
+            throw new Error(`Cannot write to database directory: ${error.message}`);
+        }
+        
         try {
             this.db = new sqlite3.Database(dbPath);
             console.log(`✅ Database connection established: ${dbPath}`);
