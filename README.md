@@ -8,6 +8,7 @@ A Discord bot that tracks and announces member birthdays automatically!
 - Automatically handles Daylight Saving Time transitions
 - Pings `@everyone` in the configured channel
 - Shows age if birth year was provided during setup
+- (Optional) Assign members a special role on their birthday that gets automatically removed the next day
 - Beautiful embed messages with emojis
 
 
