@@ -39,8 +39,6 @@ updates:
     #     versions: ["15.x"]
     # Auto-merge minor and patch updates for production dependencies
     # (requires enabling auto-merge in repository settings)
-    reviewers:
-      - "slamanna212"
     assignees:
       - "slamanna212"
 
