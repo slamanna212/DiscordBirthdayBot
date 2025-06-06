@@ -2,14 +2,14 @@
 
 A Discord bot that tracks and announces member birthdays automatically!
 
-## Features
+## Birthday Announcements
 
-- **Slash Commands**: Modern Discord slash command interface
-- **Birthday Tracking**: Store birthdays with day, month, and optional year
-- **Automatic Announcements**: Daily birthday announcements at 10:00 AM Eastern Time
-- **Age Calculation**: Shows age if birth year is provided
-- **Data Persistence**: SQLite database for reliable data storage
-- **Cross-Platform**: Developed on Windows, deployable on Linux
+- Runs daily at the **configured hour** in the configured timezone (defaults to 10:00 AM Eastern Time)
+- Automatically handles Daylight Saving Time transitions
+- Pings `@everyone` in the configured channel
+- Shows age if birth year was provided during setup
+- Beautiful embed messages with emojis
+
 
 ## Commands
 
@@ -37,13 +37,7 @@ A Discord bot that tracks and announces member birthdays automatically!
    - Select "Send Messages", "Use Slash Commands", and "Mention Everyone" permissions
    - Copy the generated URL to invite the bot to your server
 
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Get Your Discord Credentials
+### 2. Get Your Discord Credentials
 
 You'll need these values from the Discord Developer Portal:
 - `DISCORD_TOKEN` - Your bot token
@@ -52,98 +46,71 @@ You'll need these values from the Discord Developer Portal:
 - `TZ` - Timezone for birthday notifications (optional, defaults to America/New_York)
 - `BIRTHDAY_NOTIFICATION_HOUR` - Hour for notifications in 24-hour format (optional, defaults to 10)
 
-These will be passed directly to the bot when you run it.
 
-### 4. Install Dependencies
-
-```bash
-npm install
-```
-
-### 5. Deploy Slash Commands (Local Development)
-
-```bash
-# Set environment variables and deploy commands
-DISCORD_TOKEN="your_token" DISCORD_CLIENT_ID="your_client_id" npm run deploy-commands
-```
-
-### 6. Run the Bot (Local Development)
-
-```bash
-# Set environment variables and run the bot
-DISCORD_TOKEN="your_token" DISCORD_CLIENT_ID="your_client_id" BIRTHDAY_CHANNEL_ID="your_channel_id" npm start
-```
-
-## Deployment Options
-
-### Option 1: Docker Deployment (Recommended)
-
-The easiest way to deploy the bot, especially on Linux servers:
-
-1. **Install Docker** on your target machine
-
-2. **Deploy with command line arguments:**
+### 3. Deploy Slash Commands Using Docker (One Time)
    ```bash
-   # Build and deploy with your credentials
-   chmod +x scripts/docker-run.sh
-   ./scripts/docker-run.sh "your_bot_token" "your_client_id" "your_channel_id"
-   ```
-
-3. **Or manually with Docker commands:**
-   ```bash
-   # Build the image
-   npm run docker:build
-   
-   # Run the container with environment variables
-   docker run -d \
-     --name birthday_bot \
-     --restart unless-stopped \
-     -e TZ=America/New_York \
-     -e NODE_ENV=production \
-     -e DISCORD_TOKEN="your_token" \
+   # Deploy commands to Discord (one-time setup)
+   docker run --rm \
+     -e DISCORD_TOKEN="your_bot_token" \
      -e DISCORD_CLIENT_ID="your_client_id" \
-     -e BIRTHDAY_CHANNEL_ID="your_channel_id" \
-     -v ./data:/app/data \
-     birthday-bot
+     ghcr.io/slamanna212/discord-birthday-bot:latest \
+     node scripts/deploy-commands.js
    ```
 
-4. **Manage the bot:**
-   ```bash
-   # View logs
-   npm run docker:logs
-   
-   # Stop the bot
-   npm run docker:stop
-   
-   # Restart the bot
-   docker restart birthday_bot
-   
-   # Build image only
-   npm run docker:build
+### 4. Run the Bot Using Docker
+ ```docker
+ docker run -d \
+   --name birthday_bot \
+   --restart unless-stopped \
+   -e TZ=America/New_York \
+   -e BIRTHDAY_NOTIFICATION_HOUR=10 \
+   -e NODE_ENV=production \
+   -e DISCORD_TOKEN="your_bot_token" \
+   -e DISCORD_CLIENT_ID="your_client_id" \
+   -e BIRTHDAY_CHANNEL_ID="your_channel_id" \
+   -v ./data:/app/data \
+   ghcr.io/slamanna212/discord-birthday-bot:latest
    ```
 
-### Option 2: Traditional Linux Deployment
+## Environment Variables
 
-When moving from Windows to Linux without Docker:
+The bot uses several environment variables for configuration. Here's a complete reference:
 
-1. Copy all files to your Linux server
-2. Install Node.js 22+ and npm on Linux
-3. Run `npm install` to install dependencies for Linux
-4. Use a process manager like PM2 for production:
+### Required Variables
 
-```bash
-npm install -g pm2
+| Variable | Description | Example | Notes |
+|----------|-------------|---------|-------|
+| `DISCORD_TOKEN` | Your bot's token from Discord Developer Portal | `MTEx...` | **Required** - Keep this secret! |
+| `DISCORD_CLIENT_ID` | Your application's client ID | `123456789012345678` | **Required** - Found in Discord Developer Portal |
+| `BIRTHDAY_CHANNEL_ID` | Channel ID where birthday announcements are sent | `123456789012345678` | **Required** - Right-click channel → Copy ID |
+| `NODE_ENV` | Node.js environment | `development` | `development`, `production` | `production` |
 
-# Start with environment variables
-pm2 start src/bot.js --name "birthday-bot" \
-  --env DISCORD_TOKEN="your_token" \
-  --env DISCORD_CLIENT_ID="your_client_id" \
-  --env BIRTHDAY_CHANNEL_ID="your_channel_id" \
-  --env NODE_ENV="production"
+### Optional Variables
 
-pm2 startup
-pm2 save
-```
+| Variable | Description | Default | Valid Values | Example |
+|----------|-------------|---------|--------------|---------|
+| `TZ` | Timezone for birthday notifications | `America/New_York` | Any valid IANA timezone | `America/Los_Angeles`, `UTC`, `Europe/London` |
+| `BIRTHDAY_NOTIFICATION_HOUR` | Hour to send birthday notifications (24-hour format) | `10` | `0-23` | `6` (6:00 AM), `18` (6:00 PM) |
+
+
+### Getting Environment Variable Values
+
+#### Discord Token & Client ID
+1. Go to [Discord Developer Portal](https://discord.com/developers/applications)
+2. Select your application
+3. **Bot Token**: Go to "Bot" section → Copy token
+4. **Client ID**: Go to "General Information" → Copy Application ID
+
+#### Channel ID
+1. Enable Developer Mode in Discord (User Settings → Advanced → Developer Mode)
+2. Right-click the channel where you want birthday announcements
+3. Select "Copy ID"
+
+#### Timezone Values
+Use standard IANA timezone names:
+- **US Timezones**: `America/New_York`, `America/Chicago`, `America/Denver`, `America/Los_Angeles`
+- **Other Common**: `UTC`, `Europe/London`, `Asia/Tokyo`, `Australia/Sydney`
+- **Full List**: [Wikipedia IANA Timezone List](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
 
 ## Database
 
@@ -160,70 +127,6 @@ CREATE TABLE birthdays (
     year INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
-```
-
-## Birthday Announcements
-
-- Runs daily at the **configured hour** in the configured timezone (defaults to 10:00 AM Eastern Time)
-- Automatically handles Daylight Saving Time transitions
-- Pings `@everyone` in the configured channel
-- Shows age if birth year was provided during setup
-- Beautiful embed messages with emojis
-
-## Timezone Configuration
-
-The bot uses a single `TZ` environment variable to control both the container timezone and notification scheduling:
-
-- **Default**: `America/New_York` (Eastern Time)
-- **Examples**: 
-  - Pacific Time: `TZ=America/Los_Angeles`
-  - Central Time: `TZ=America/Chicago`
-  - Mountain Time: `TZ=America/Denver`
-  - UTC: `TZ=UTC`
-  - London: `TZ=Europe/London`
-  - Tokyo: `TZ=Asia/Tokyo`
-
-**Docker Example with Different Timezone:**
-```bash
-docker run -d \
-  --name birthday_bot \
-  --restart unless-stopped \
-  -e TZ=America/Los_Angeles \
-  -e NODE_ENV=production \
-  -e DISCORD_TOKEN="your_token" \
-  -e DISCORD_CLIENT_ID="your_client_id" \
-  -e BIRTHDAY_CHANNEL_ID="your_channel_id" \
-  -v ./data:/app/data \
-  birthday-bot
-```
-
-## Notification Time Configuration
-
-The bot uses the `BIRTHDAY_NOTIFICATION_HOUR` environment variable to control when birthday notifications are sent:
-
-- **Default**: `10` (10:00 AM)
-- **Format**: 24-hour format (0-23)
-- **Frequency**: Daily at the top of the hour
-- **Examples**:
-  - `BIRTHDAY_NOTIFICATION_HOUR=0` → 12:00 AM (Midnight)
-  - `BIRTHDAY_NOTIFICATION_HOUR=6` → 6:00 AM
-  - `BIRTHDAY_NOTIFICATION_HOUR=12` → 12:00 PM (Noon)
-  - `BIRTHDAY_NOTIFICATION_HOUR=18` → 6:00 PM
-  - `BIRTHDAY_NOTIFICATION_HOUR=23` → 11:00 PM
-
-**Docker Example with Custom Time (6:00 AM):**
-```bash
-docker run -d \
-  --name birthday_bot \
-  --restart unless-stopped \
-  -e TZ=America/New_York \
-  -e BIRTHDAY_NOTIFICATION_HOUR=6 \
-  -e NODE_ENV=production \
-  -e DISCORD_TOKEN="your_token" \
-  -e DISCORD_CLIENT_ID="your_client_id" \
-  -e BIRTHDAY_CHANNEL_ID="your_channel_id" \
-  -v ./data:/app/data \
-  birthday-bot
 ```
 
 ## GitHub Actions Workflows
@@ -267,27 +170,6 @@ This project includes automated GitHub Actions workflows:
 1. **Automatic Testing**: Push code or create PR - tests run automatically
 2. **Automatic Building**: Push to main branch - Docker image builds and pushes to GHCR
 3. **Manual Deployment**: Go to Actions tab → Deploy → Fill in credentials → Run
-
-### **🐳 Using Built Images**
-
-Images are automatically pushed to GitHub Container Registry:
-
-```bash
-# Pull the latest image
-docker pull ghcr.io/yourusername/discord-birthday-bot:latest
-
-# Run with your credentials
-docker run -d \
-  --name birthday_bot \
-  --restart unless-stopped \
-  -e TZ=America/New_York \
-  -e NODE_ENV=production \
-  -e DISCORD_TOKEN="your_token" \
-  -e DISCORD_CLIENT_ID="your_client_id" \
-  -e BIRTHDAY_CHANNEL_ID="your_channel_id" \
-  -v ./data:/app/data \
-  ghcr.io/yourusername/discord-birthday-bot:latest
-```
 
 ## License
 
