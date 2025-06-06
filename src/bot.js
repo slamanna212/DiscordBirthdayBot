@@ -3,8 +3,20 @@ const cron = require('node-cron');
 const Database = require('./database');
 const { execSync } = require('child_process');
 
-// Set timezone to Eastern Time for the entire Node.js process
-process.env.TZ = 'America/New_York';
+// Set timezone for the entire Node.js process (defaults to Eastern Time)
+const TIMEZONE = process.env.TZ || 'America/New_York';
+process.env.TZ = TIMEZONE;
+
+// Get notification hour from environment variable (defaults to 10 AM, 24-hour format)
+const NOTIFICATION_HOUR = parseInt(process.env.BIRTHDAY_NOTIFICATION_HOUR || '10', 10);
+
+// Validate notification hour
+if (NOTIFICATION_HOUR < 0 || NOTIFICATION_HOUR > 23 || isNaN(NOTIFICATION_HOUR)) {
+    console.error('❌ Invalid BIRTHDAY_NOTIFICATION_HOUR. Must be 0-23 (24-hour format).');
+    console.error(`   Provided: ${process.env.BIRTHDAY_NOTIFICATION_HOUR}`);
+    console.error('   Example: BIRTHDAY_NOTIFICATION_HOUR=10 for 10:00 AM');
+    process.exit(1);
+}
 
 // Get git version information
 function getGitVersion() {
@@ -40,10 +52,12 @@ console.log(`📅 Date: ${version.date}`);
 console.log('');
 
 // Log current timezone information for debugging
-console.log('🕐 Timezone Configuration:');
+console.log('🕐 Configuration:');
+console.log(`   Timezone: ${TIMEZONE}`);
+console.log(`   Notification Hour: ${NOTIFICATION_HOUR}:00 (${NOTIFICATION_HOUR === 0 ? '12:00 AM' : NOTIFICATION_HOUR <= 12 ? NOTIFICATION_HOUR + ':00 AM' : (NOTIFICATION_HOUR - 12) + ':00 PM'})`);
 console.log(`   System TZ: ${process.env.TZ}`);
 console.log(`   Current time: ${new Date().toString()}`);
-console.log(`   Current time (Eastern): ${new Date().toLocaleString("en-US", {timeZone: "America/New_York"})}`);
+console.log(`   Current time (Configured): ${new Date().toLocaleString("en-US", {timeZone: TIMEZONE})}`);
 
 // Note: Environment variables should be passed directly to the process
 // For local development, you can set them in your shell or IDE
@@ -95,6 +109,10 @@ function writeHealthStatus() {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         version: getGitVersion(),
+        configuration: {
+            timezone: TIMEZONE,
+            notificationHour: NOTIFICATION_HOUR
+        },
         discord: {
             connected: client.isReady(),
             user: client.user ? client.user.tag : null,
@@ -114,7 +132,11 @@ function writeHealthStatus() {
 // Bot ready event
 client.once('ready', () => {
     console.log(`✅ ${client.user.tag} is online and ready!`);
-    console.log(`📅 Birthday checking scheduled for 10:00 AM Eastern Time`);
+    
+    const timeDisplay = NOTIFICATION_HOUR === 0 ? '12:00 AM' : 
+                       NOTIFICATION_HOUR <= 12 ? `${NOTIFICATION_HOUR}:00 AM` : 
+                       `${NOTIFICATION_HOUR - 12}:00 PM`;
+    console.log(`📅 Birthday checking scheduled for ${timeDisplay} ${TIMEZONE} time`);
     
     // Set bot status to "Listening to Happy Birthday"
     client.user.setPresence({
@@ -129,11 +151,14 @@ client.once('ready', () => {
     // Write initial health status
     writeHealthStatus();
     
-    // Schedule birthday check for 10:00 AM Eastern Time daily
-    // Using cron: '0 10 * * *' for 10:00 AM Eastern (considering daylight saving time)
-    cron.schedule('0 10 * * *', checkBirthdays, {
+    // Schedule birthday check for the configured hour in the configured timezone daily
+    // Using cron: '0 H * * *' where H is the notification hour
+    const cronPattern = `0 ${NOTIFICATION_HOUR} * * *`;
+    console.log(`⏰ Cron pattern: ${cronPattern}`);
+    
+    cron.schedule(cronPattern, checkBirthdays, {
         scheduled: true,
-        timezone: "America/New_York"
+        timezone: TIMEZONE
     });
     
     // Schedule health check logging and file updates every minute
@@ -143,7 +168,7 @@ client.once('ready', () => {
         writeHealthStatus();
     }, {
         scheduled: true,
-        timezone: "America/New_York"
+        timezone: TIMEZONE
     });
 });
 
@@ -314,13 +339,13 @@ async function checkBirthdays() {
     console.log('🔍 Checking for birthdays...');
     
     const now = new Date();
-    const easternTime = new Date(now.toLocaleString("en-US", {timeZone: "America/New_York"}));
-    const month = easternTime.getMonth() + 1;
-    const day = easternTime.getDate();
+    const localTime = new Date(now.toLocaleString("en-US", {timeZone: TIMEZONE}));
+    const month = localTime.getMonth() + 1;
+    const day = localTime.getDate();
     
     // Debug timezone information
     console.log(`🕐 Time Debug - System: ${now.toString()}`);
-    console.log(`🕐 Time Debug - Eastern: ${easternTime.toString()}`);
+    console.log(`🕐 Time Debug - Local (${TIMEZONE}): ${localTime.toString()}`);
     console.log(`📅 Checking for birthdays on: ${month}/${day}`);
 
     try {
@@ -343,7 +368,7 @@ async function checkBirthdays() {
             let message = `🎉 @everyone\n\n🎂 **Happy Birthday ${birthday.username}!** 🎂\n\n`;
             
             if (birthday.year) {
-                const age = easternTime.getFullYear() - birthday.year;
+                const age = localTime.getFullYear() - birthday.year;
                 message += `🎈 You're turning **${age}** today! 🎈\n\n`;
             }
             
@@ -374,6 +399,10 @@ function healthCheck() {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         version: getGitVersion(),
+        configuration: {
+            timezone: TIMEZONE,
+            notificationHour: NOTIFICATION_HOUR
+        },
         discord: {
             connected: client.isReady(),
             user: client.user ? client.user.tag : null,
@@ -384,9 +413,9 @@ function healthCheck() {
             connected: database.db ? true : false
         },
         timezone: {
-            configured: process.env.TZ,
+            configured: TIMEZONE,
             current: new Date().toString(),
-            eastern: new Date().toLocaleString("en-US", {timeZone: "America/New_York"})
+            local: new Date().toLocaleString("en-US", {timeZone: TIMEZONE})
         }
     };
     
@@ -405,13 +434,17 @@ if (process.argv.includes('--health-check')) {
         status: 'healthy',
         timestamp: new Date().toISOString(),
         version: getGitVersion(),
+        configuration: {
+            timezone: TIMEZONE,
+            notificationHour: NOTIFICATION_HOUR
+        },
         database: {
             accessible: false
         },
         timezone: {
-            configured: process.env.TZ,
+            configured: TIMEZONE,
             current: new Date().toString(),
-            eastern: new Date().toLocaleString("en-US", {timeZone: "America/New_York"})
+            local: new Date().toLocaleString("en-US", {timeZone: TIMEZONE})
         }
     };
     

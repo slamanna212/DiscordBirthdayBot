@@ -25,6 +25,10 @@ try {
     console.log(`   Message: ${health.version.message}`);
     console.log(`   Date: ${health.version.date}`);
     
+    console.log('\n⚙️ Configuration:');
+    console.log(`   Timezone: ${health.configuration.timezone}`);
+    console.log(`   Notification Hour: ${health.configuration.notificationHour}:00`);
+    
     console.log('\n🤖 Discord Connection:');
     console.log(`   Connected: ${health.discord.connected}`);
     console.log(`   Bot User: ${health.discord.user || 'Not connected'}`);
@@ -37,7 +41,7 @@ try {
     console.log('\n🌍 Timezone:');
     console.log(`   Configured: ${health.timezone.configured}`);
     console.log(`   Current: ${health.timezone.current}`);
-    console.log(`   Eastern: ${health.timezone.eastern}`);
+    console.log(`   Local Time: ${health.timezone.local}`);
     
     if (health.status === 'healthy') {
         console.log('\n✅ Bot is healthy!');

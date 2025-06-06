@@ -45,10 +45,12 @@ npm install
 
 ### 3. Get Your Discord Credentials
 
-You'll need these three values from the Discord Developer Portal:
+You'll need these values from the Discord Developer Portal:
 - `DISCORD_TOKEN` - Your bot token
 - `DISCORD_CLIENT_ID` - Your application client ID  
 - `BIRTHDAY_CHANNEL_ID` - The channel ID where announcements will be sent
+- `TZ` - Timezone for birthday notifications (optional, defaults to America/New_York)
+- `BIRTHDAY_NOTIFICATION_HOUR` - Hour for notifications in 24-hour format (optional, defaults to 10)
 
 These will be passed directly to the bot when you run it.
 
@@ -162,11 +164,67 @@ CREATE TABLE birthdays (
 
 ## Birthday Announcements
 
-- Runs daily at **10:00 AM Eastern Time**
+- Runs daily at the **configured hour** in the configured timezone (defaults to 10:00 AM Eastern Time)
 - Automatically handles Daylight Saving Time transitions
 - Pings `@everyone` in the configured channel
 - Shows age if birth year was provided during setup
 - Beautiful embed messages with emojis
+
+## Timezone Configuration
+
+The bot uses a single `TZ` environment variable to control both the container timezone and notification scheduling:
+
+- **Default**: `America/New_York` (Eastern Time)
+- **Examples**: 
+  - Pacific Time: `TZ=America/Los_Angeles`
+  - Central Time: `TZ=America/Chicago`
+  - Mountain Time: `TZ=America/Denver`
+  - UTC: `TZ=UTC`
+  - London: `TZ=Europe/London`
+  - Tokyo: `TZ=Asia/Tokyo`
+
+**Docker Example with Different Timezone:**
+```bash
+docker run -d \
+  --name birthday_bot \
+  --restart unless-stopped \
+  -e TZ=America/Los_Angeles \
+  -e NODE_ENV=production \
+  -e DISCORD_TOKEN="your_token" \
+  -e DISCORD_CLIENT_ID="your_client_id" \
+  -e BIRTHDAY_CHANNEL_ID="your_channel_id" \
+  -v ./data:/app/data \
+  birthday-bot
+```
+
+## Notification Time Configuration
+
+The bot uses the `BIRTHDAY_NOTIFICATION_HOUR` environment variable to control when birthday notifications are sent:
+
+- **Default**: `10` (10:00 AM)
+- **Format**: 24-hour format (0-23)
+- **Frequency**: Daily at the top of the hour
+- **Examples**:
+  - `BIRTHDAY_NOTIFICATION_HOUR=0` → 12:00 AM (Midnight)
+  - `BIRTHDAY_NOTIFICATION_HOUR=6` → 6:00 AM
+  - `BIRTHDAY_NOTIFICATION_HOUR=12` → 12:00 PM (Noon)
+  - `BIRTHDAY_NOTIFICATION_HOUR=18` → 6:00 PM
+  - `BIRTHDAY_NOTIFICATION_HOUR=23` → 11:00 PM
+
+**Docker Example with Custom Time (6:00 AM):**
+```bash
+docker run -d \
+  --name birthday_bot \
+  --restart unless-stopped \
+  -e TZ=America/New_York \
+  -e BIRTHDAY_NOTIFICATION_HOUR=6 \
+  -e NODE_ENV=production \
+  -e DISCORD_TOKEN="your_token" \
+  -e DISCORD_CLIENT_ID="your_client_id" \
+  -e BIRTHDAY_CHANNEL_ID="your_channel_id" \
+  -v ./data:/app/data \
+  birthday-bot
+```
 
 ## File Structure
 

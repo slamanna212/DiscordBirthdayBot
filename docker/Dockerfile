@@ -38,7 +38,7 @@ COPY src/ ./src/
 COPY scripts/ ./scripts/
 COPY .git/ ./.git/
 
-# Set timezone to Eastern Time for proper birthday scheduling
+# Set default timezone to Eastern Time (can be overridden with -e TZ=<timezone>)
 ENV TZ=America/New_York
 
 # Create non-root user for security

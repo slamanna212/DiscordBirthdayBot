@@ -45,10 +45,12 @@ npm install
 
 ### 3. Get Your Discord Credentials
 
-You'll need these three values from the Discord Developer Portal:
+You'll need these values from the Discord Developer Portal:
 - `DISCORD_TOKEN` - Your bot token
 - `DISCORD_CLIENT_ID` - Your application client ID  
 - `BIRTHDAY_CHANNEL_ID` - The channel ID where announcements will be sent
+- `TZ` - Timezone for birthday notifications (optional, defaults to America/New_York)
+- `BIRTHDAY_NOTIFICATION_HOUR` - Hour for notifications in 24-hour format (optional, defaults to 10)
 
 These will be passed directly to the bot when you run it.
 
