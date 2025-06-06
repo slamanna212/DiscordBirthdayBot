@@ -57,7 +57,5 @@ updates:
     commit-message:
       prefix: "ci"
       include: "scope"
-    reviewers:
-      - "slamanna212"
     assignees:
       - "slamanna212" 
