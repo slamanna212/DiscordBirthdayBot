@@ -31,6 +31,6 @@
   "dependencies": {
     "discord.js": "^14.21.0",
     "sqlite3": "^5.1.6",
-    "node-cron": "^4.2.0"
+    "node-cron": "^4.2.1"
   }
 } 
