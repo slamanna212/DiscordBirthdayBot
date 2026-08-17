@@ -29,8 +29,8 @@
     "node": ">=22.0.0"
   },
   "dependencies": {
-    "discord.js": "^14.23.2",
-    "sqlite3": "^5.1.6",
-    "node-cron": "^4.2.1"
+    "discord.js": "^14.27.0",
+    "sqlite3": "^6.0.1",
+    "node-cron": "^4.6.0"
   }
 } 
